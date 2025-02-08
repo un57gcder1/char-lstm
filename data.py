@@ -74,6 +74,27 @@ class TextDataLoader:
 
         return (self.training_data, self.valid_data)
 
-    # Length tokens per batch (default is 64 tokens)
-    def batch(self, length = 64):
-        return
+    # Batch size (default is 8 tokens)
+    # Note: Removes last, incomplete batch (no padding)
+    def batch(self, batch_size = 8):
+        if self.training_data.dim() == 2 and self.valid_data.dim() == 2:
+            self.training_data = self.training_data[:,:(self.training_data.size()[1]//batch_size)*batch_size]
+            self.training_data = self.training_data.view(self.training_data.size()[0], 
+                               self.training_data.size()[1]//batch_size, 
+                               batch_size)
+
+            self.valid_data = self.valid_data[:,:(self.valid_data.size()[1]//batch_size)*batch_size] 
+            self.valid_data = self.valid_data.view(self.valid_data.size()[0], 
+                               self.valid_data.size()[1]//batch_size, 
+                               batch_size)
+        elif self.training_data.dim() == 1 and self.valid_Data.dim() == 1: 
+            self.training_data = self.training_data[:(self.training_data.size()[0]//batch_size)*batch_size]
+            self.training_data = self.training_data.view(self.training_data.size()[1]//batch_size, 
+                               batch_size)
+
+            self.valid_data = self.valid_data[:(self.valid_data.size()[0]//batch_size)*batch_size]
+            self.valid_data = self.valid_data.view(self.valid_data.size()[1]//batch_size, 
+                               batch_size)
+        else:
+            raise Exception("Training Data & Valid Data tensors are of wrong shape.")
+        return (self.training_data, self.valid_data)
