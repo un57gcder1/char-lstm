@@ -13,7 +13,7 @@ import os
 
 """
 class TextDataLoader:
-    def __init__(self, textFile, split = 0.2):
+    def __init__(self, textFile):
         if type(textFile) == list and len(textFile) == 2:
             self.train = textFile[0]
             self.valid = textFile[1]
@@ -98,3 +98,5 @@ class TextDataLoader:
         else:
             raise Exception("Training Data & Valid Data tensors are of wrong shape.")
         return (self.training_data, self.valid_data)
+    def size(self):
+        return len(self.tokens)
