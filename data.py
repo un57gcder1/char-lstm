@@ -61,14 +61,18 @@ class TextDataLoader:
         self.valid_data = tensor(self.valid_data)
         return (self.training_data, self.valid_data)
 
-    def substantiate(self):
-        ind_var = self.training_data[:len(self.training_data)-1]
-        dep_var = self.training_data[1:]
+    def substantiate(self, window = 1):
+        if window < 1:
+            raise Exception("Window size must be greater than or equal to 1.")
+        if window > 1000:
+            raise Warning("Window size is unusually large. May cause errors.")
+        ind_var = self.training_data[:len(self.training_data)-window]
+        dep_var = self.training_data[window:]
         n = np.array([ind_var, dep_var])
         self.training_data = tensor(n)
 
-        ind_val_var = self.valid_data[:len(self.valid_data)-1]
-        dep_val_var = self.valid_data[1:]
+        ind_val_var = self.valid_data[:len(self.valid_data)-window]
+        dep_val_var = self.valid_data[window:]
         m = np.array([ind_val_var, dep_val_var])
         self.valid_data = tensor(m)
 

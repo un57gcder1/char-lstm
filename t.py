@@ -6,7 +6,7 @@ l = t.tokenize()
 
 m = t.numericalize()
 
-n = t.substantiate()
+n = t.substantiate(window = 5)
 
 o = t.batch()
 
