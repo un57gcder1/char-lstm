@@ -6,9 +6,15 @@ class RNN:
         self.hidden_size = hidden_size
         self.batch_size = batch_size
         if train:
+            # Data
             self.x_info = training_data[0,:,:]
             self.y_info = training_data[1,:,:]
             self.num_batches = training_data.size()[1]
+            self.eval_batches = valid_data.size()[1]
+            self.eval_x = valid_data[0,:,:]
+            self.eval_y = valid_data[1,:,:]
+
+            # Params
             self.wxh = torch.randn(vocab_size, hidden_size).requires_grad_()
             self.whh = torch.randn(hidden_size, hidden_size).requires_grad_()
             self.bh = torch.randn(hidden_size, 1).requires_grad_()
@@ -19,8 +25,9 @@ class RNN:
     # Training the model
     def train(self, epochs = 30, learning_rate = 1e-5):
         print("Training for ", epochs, " epochs with a total of ", epochs*num_batches, " steps.")
+        print("===============================================")
         for i in range(0, epochs):
-            for j in range(0, num_batches):
+            for j in range(0, self.num_batches):
                 x = x_info[j, :]
                 y = y_info[j, :]
                 y_pred = self.step(x)
@@ -29,6 +36,8 @@ class RNN:
                 for p in [self.wxh, self.whh, self.bh, self.why, self.by]:
                     p.data -= p.grad*lr
                     p.grad.zero_()
+                print("Epoch: ", i+1, "   Step: ", j+1, "/", num_batches, "   Loss: ", loss)
+
 
 
     def loss(self, theOutput, actual):
@@ -47,11 +56,23 @@ class RNN:
 
     # Saving the model weights, etc.
     def save(self, filename = "model.pth"):
-        return
+        d = {"wxh":self.wxh,
+             "whh":self.whh,
+             "bh":self.bh,
+             "why":self.why,
+             "by":self.by}
+        torch.save(d, filename)
+        return 0
 
     # Loading the model weights from a file
     def load(self, filename = "model.pth"):
-        return
+        d = torch.load(filename)
+        self.wxh = d["wxh"]
+        self.whh = d["whh"]
+        self.bh = d["bh"]
+        self.why = d["why"]
+        self.by = d["by"]
+        return 0
 
     # Evaluating on validation set during training
     def evaluate(self):
