@@ -1,6 +1,5 @@
 __pycache__/
-model.pth
-single-char.pth
+*.pth
 usedModel.py
 
 testing/av.txt
