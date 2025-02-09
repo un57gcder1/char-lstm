@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 
 class RNN:
     def __init__(self, vocab_size, hidden_size, batch_size, training_data, valid_data, train = True):
@@ -59,7 +60,7 @@ class RNN:
         return ((theOutput-actual)**2).mean()
     
     # theInput: a matrix of shape batch_size x vocab_size (row, columns)
-    def step(self, theInput, temperature = 1):
+    def step(self, theInput, temperature = 1.0):
         """
         Traditional feed-forward neural networK:
         res = theInput@self.wxh
@@ -67,7 +68,7 @@ class RNN:
         res = res@self.why + self.by"""
         self.hidden = torch.tanh(self.hidden@self.whh + theInput@self.wxh + self.bh)
         theOutput = self.hidden@self.why + self.by
-        theOutput = torch.nn.softmax(theOutput/temperature, dim=-1)
+        theOutput = F.softmax(theOutput/temperature, dim=-1)
         return theOutput
 
     # Saving the model weights, etc.
@@ -91,6 +92,6 @@ class RNN:
         return 0
 
     # Run inferences on the model
-    def generate(self, prompt, decoder, temperature = 0.5):
+    def generate(self, prompt, decoder, temperature = 1.0):
         with torch.no_grad():
             return self.step(prompt, temperature=temperature)
