@@ -90,6 +90,6 @@ class RNN:
         return 0
 
     # Run inferences on the model
-    def generate(self, prompt, decoder, temperature = 1.0):
+    def generate(self, prompt, temperature = 1.0):
         with torch.no_grad():
             return self.step(prompt, temperature=temperature)
