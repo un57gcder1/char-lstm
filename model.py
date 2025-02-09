@@ -23,7 +23,7 @@ class RNN:
         self.hidden = torch.zeros(self.batch_size, self.hidden_size, requires_grad=False)
 
     # Training the model
-    def train(self, epochs = 30, learning_rate = 1e-5):
+    def train(self, epochs = 30, steps_log = 10000, learning_rate = 1e-5):
         print("Training for ", epochs, " epochs with a total of ", epochs*self.num_batches, " steps.")
         print("===============================================")
         for i in range(0, epochs):
@@ -37,10 +37,10 @@ class RNN:
                 for p in [self.wxh, self.whh, self.bh, self.why, self.by]:
                     p.data -= p.grad*learning_rate
                     p.grad = None
-                #print("Epoch: ", i+1, "   Step: ", j+1, "/", self.num_batches, "   Loss: ", intLoss)
+                if ((j+1) % steps_log == 0):
+                    print("Epoch: ", i+1, "   Step: ", j+1, "/", self.num_batches, "   Loss: ", intLoss)
                 self.hidden.detach_()
             print("Epoch ", i+1, " Completed")
-            print("Evaluating on validation set")
             with torch.no_grad():
                 allLs = []
                 for j in range(0, self.eval_batches):
@@ -66,6 +66,7 @@ class RNN:
         res = res@self.why + self.by"""
         self.hidden = torch.tanh(self.hidden@self.whh + theInput@self.wxh + self.bh)
         theOutput = self.hidden@self.why + self.by
+        theOutput = torch.softmax(theOutput)
         return theOutput
 
     # Saving the model weights, etc.
