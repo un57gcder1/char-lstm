@@ -139,3 +139,17 @@ class TextDataLoader:
             num = index.item()
             theInput += decoder[num]
         return theInput
+    
+    def save(self, filename="db.pth"):
+        d = {"training_data":self.training_data,
+             "valid_data":self.valid_data,
+             "tokens":self.tokens}
+        torch.save(d, filename)
+        return 0
+
+    def load(self, filename="db.pth"):
+        d = torch.load(filename)
+        self.training_data = d["training_data"]
+        self.valid_data = d["valid_data"]
+        self.tokens = d["tokens"]
+        return (self.training_data, self.valid_data)

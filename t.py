@@ -22,6 +22,8 @@ m = t.numericalize()
 n = t.substantiate(window = WINDOW)
 
 o = t.batch(batch_size = BS)
+
+t.save()
 """
 print(m[0].shape, m[1].shape)
 
