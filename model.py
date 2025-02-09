@@ -23,7 +23,7 @@ class RNN:
         self.hidden = torch.zeros(self.batch_size, self.hidden_size, requires_grad=False)
 
     # Training the model
-    def train(self, epochs = 30, steps_log = 10000, learning_rate = 1e-5):
+    def train(self, epochs = 30, steps_log = 10000, learning_rate = 1e-5, generate=True, decoder={}):
         print("Training for ", epochs, " epochs with a total of ", epochs*self.num_batches, " steps.")
         print("===============================================")
         for i in range(0, epochs):
@@ -53,12 +53,13 @@ class RNN:
                 mLoss = allLs.mean()
                 mLoss = mLoss.item()
                 print("Validation loss: ", mLoss)
-
+            if generate == True:
+                self.generate(decoder=decoder)
     def loss(self, theOutput, actual):
         return ((theOutput-actual)**2).mean()
     
     # theInput: a matrix of shape batch_size x vocab_size (row, columns)
-    def step(self, theInput):
+    def step(self, theInput, temperature = 1):
         """
         Traditional feed-forward neural networK:
         res = theInput@self.wxh
@@ -66,7 +67,7 @@ class RNN:
         res = res@self.why + self.by"""
         self.hidden = torch.tanh(self.hidden@self.whh + theInput@self.wxh + self.bh)
         theOutput = self.hidden@self.why + self.by
-        theOutput = torch.softmax(theOutput)
+        theOutput = torch.nn.softmax(theOutput/temperature, dim=-1)
         return theOutput
 
     # Saving the model weights, etc.
@@ -90,6 +91,6 @@ class RNN:
         return 0
 
     # Run inferences on the model
-    def generate(self, prompt, temperature = 0.5):
+    def generate(self, prompt, decoder, temperature = 0.5):
         with torch.no_grad():
-            return self.step(prompt)
+            return self.step(prompt, temperature=temperature)

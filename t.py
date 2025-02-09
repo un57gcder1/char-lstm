@@ -32,15 +32,15 @@ print(o[0].shape, o[1].shape)
 print(o[0], o[1])
 """
 model = RNN(t.size(), HS, BS, o[0], o[1])
-model.load()
-#for i in range(30):
-#model.train(epochs=30)
-    #print("Generating text: ")
-fill = ""
-for i in range(CHARS):
-    s = t.encode(join(PROMPT, fill, limit=WINDOW))
-    ns = model.generate(s)
-    res = t.decode(ns)
-    fill += res[len(res)-1]
-print(fill)
-#model.save()
+#model.load()
+for i in range(30):
+    model.train(epochs=1)
+    print("Generating text: ")
+    fill = ""
+    for i in range(CHARS):
+        s = t.encode(join(PROMPT, fill, limit=WINDOW))
+        ns = model.generate(s)
+        res = t.decode(ns)
+        fill += res[len(res)-1]
+    print(fill)
+model.save()
