@@ -15,15 +15,17 @@ def join(str1, str2, limit):
 
 t = TextDataLoader(["testing/jt.txt","testing/jv.txt"])
 
-l = t.tokenize()
+#l = t.tokenize()
 
-m = t.numericalize()
+#m = t.numericalize()
 
-n = t.substantiate(window = WINDOW)
+#n = t.substantiate(window = WINDOW)
 
-o = t.batch(batch_size = BS)
+#o = t.batch(batch_size = BS)
 
-t.save()
+#t.save()
+
+o = t.load()
 """
 print(m[0].shape, m[1].shape)
 
