@@ -7,43 +7,57 @@ class RNN:
         self.batch_size = batch_size
         if train:
             # Data
-            self.x_info = training_data[0,:,:]
-            self.y_info = training_data[1,:,:]
+            self.x_info = training_data[0,:,:,:]
+            self.y_info = training_data[1,:,:,:]
             self.num_batches = training_data.size()[1]
             self.eval_batches = valid_data.size()[1]
             self.eval_x = valid_data[0,:,:]
             self.eval_y = valid_data[1,:,:]
 
             # Params
-            self.wxh = torch.randn(vocab_size, hidden_size).requires_grad_()
-            self.whh = torch.randn(hidden_size, hidden_size).requires_grad_()
-            self.bh = torch.randn(hidden_size, 1).requires_grad_()
-            self.why = torch.randn(hidden_size, vocab_size).requires_grad_()
-            self.by = torch.randn(vocab_size, 1).requires_grad_()
+            self.wxh = torch.randn(self.vocab_size, self.hidden_size).requires_grad_()
+            self.whh = torch.randn(self.hidden_size, self.hidden_size).requires_grad_()
+            self.bh = torch.randn(1, self.hidden_size).requires_grad_()
+            self.why = torch.randn(self.hidden_size, self.vocab_size).requires_grad_()
+            self.by = torch.randn(1, self.vocab_size).requires_grad_()
         self.hidden = torch.zeros(self.batch_size, self.hidden_size, requires_grad=False)
 
     # Training the model
     def train(self, epochs = 30, learning_rate = 1e-5):
-        print("Training for ", epochs, " epochs with a total of ", epochs*num_batches, " steps.")
+        print("Training for ", epochs, " epochs with a total of ", epochs*self.num_batches, " steps.")
         print("===============================================")
         for i in range(0, epochs):
             for j in range(0, self.num_batches):
-                x = x_info[j, :]
-                y = y_info[j, :]
+                x = self.x_info[j,:,:]
+                y = self.y_info[j,:,:]
                 y_pred = self.step(x)
                 loss = self.loss(y_pred, y)
+                intLoss = loss.item()
                 loss.backward()
                 for p in [self.wxh, self.whh, self.bh, self.why, self.by]:
-                    p.data -= p.grad*lr
-                    p.grad.zero_()
-                print("Epoch: ", i+1, "   Step: ", j+1, "/", num_batches, "   Loss: ", loss)
-
-
+                    p.data -= p.grad*learning_rate
+                    p.grad = None
+                #print("Epoch: ", i+1, "   Step: ", j+1, "/", self.num_batches, "   Loss: ", intLoss)
+                self.hidden.detach_()
+            print("Epoch ", i+1, " Completed")
+            print("Evaluating on validation set")
+            with torch.no_grad():
+                allLs = []
+                for j in range(0, self.eval_batches):
+                    x = self.eval_x[j, :]
+                    y = self.eval_y[j, :]
+                    y_pred = self.step(x)
+                    l = self.loss(y_pred, y)
+                    allLs.append(l)
+                allLs = torch.tensor(allLs)
+                mLoss = allLs.mean()
+                mLoss = mLoss.item()
+                print("Validation loss: ", mLoss)
 
     def loss(self, theOutput, actual):
         return ((theOutput-actual)**2).mean()
     
-    # theInput: a matrix of shape 1 x vocab_size (row, columns)
+    # theInput: a matrix of shape batch_size x vocab_size (row, columns)
     def step(self, theInput):
         """
         Traditional feed-forward neural networK:
@@ -74,10 +88,7 @@ class RNN:
         self.by = d["by"]
         return 0
 
-    # Evaluating on validation set during training
-    def evaluate(self):
-        return
-
     # Run inferences on the model
-    def generate(self, prompt = "", temperature = 0.5):
-        return
+    def generate(self, prompt, temperature = 0.5):
+        with torch.no_grad():
+            return self.step(prompt)
