@@ -54,8 +54,6 @@ class RNN:
                 mLoss = allLs.mean()
                 mLoss = mLoss.item()
                 print("Validation loss: ", mLoss)
-            if generate == True:
-                self.generate(decoder=decoder)
     def loss(self, theOutput, actual):
         return ((theOutput-actual)**2).mean()
     
