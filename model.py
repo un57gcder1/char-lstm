@@ -55,7 +55,8 @@ class RNN:
                 mLoss = mLoss.item()
                 print("Validation loss: ", mLoss)
     def loss(self, theOutput, actual):
-        return -1*(actual*torch.log(theOutput)).sum()
+        epsilon = 1e-9
+        return -1*((actual*torch.log(theOutput+epsilon)).sum())
     
     # theInput: a matrix of shape batch_size x vocab_size (row, columns)
     def step(self, theInput, temperature = 1.0):
