@@ -1,19 +1,17 @@
 from data import TextDataLoader
 from model import RNN
 
-BS = 64
-WINDOW = 64
+EPOCHS = 50
+LR = 1e-4
+TEMP = 0.5
+BS = 1
+WINDOW = 50
 HS = 256
-PROMPT = "To begin: I was quite confused and alarmed by the startling news"
-CHARS = 1000
+PROMPT = "Why are you so stupid? I am confused by this matter as much as y"
+# "To begin: I was quite confused and alarmed by the startling news"
+CHARS = 200
 
-def join(str1, str2, limit):
-    comp = str1+str2
-    while len(comp) > limit:
-        comp = comp[1:]
-    return comp
-
-t = TextDataLoader(["testing/jt.txt","testing/jv.txt"])
+t = TextDataLoader(["testing/smallt.txt","testing/smallv.txt"])
 
 #l = t.tokenize()
 
@@ -37,14 +35,5 @@ print(o[0], o[1])
 """
 model = RNN(t.size(), HS, BS, o[0], o[1])
 #model.load()
-for i in range(30):
-    model.train(epochs=1)
-    print("Generating text: ")
-    fill = ""
-    for i in range(CHARS):
-        s = t.encode(join(PROMPT, fill, limit=WINDOW))
-        ns = model.generate(s)
-        res = t.decode(ns)
-        fill += res[len(res)-1]
-    print(fill)
-model.save()
+s = model.train(learning_rate=LR, generate=True, epochs=EPOCHS, tdl=t, prompt=PROMPT, window=WINDOW, temperature=TEMP)
+model.save("50-epochs.pth")
