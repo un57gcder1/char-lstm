@@ -1,6 +1,62 @@
 import torch
 import torch.nn.functional as F
+from data import TextDataLoader
 
+#class RNN:
+#    def __init__(self, 
+#    vocab_size, # Number of unique tokens
+#    hidden_size, # Number of hidden "neurons", weights in the hidden matrix (hidden_size
+#                 # x hidden_size). Hidden state is batch_size x hidden_size.
+#    batch_size, # Batch_size is number of items in the mini-batch
+#    training_data, # Preprocessed training data using TextDataLoader
+#    valid_data, # Preprocessed valid data using TextDataLoader
+#    train = True)
+#    
+#    def train(self, epochs = 30,
+#    steps_log = 10000 # logging training loss for each steps_log thing
+#    learning_rate = 1e-5, # fixed learning rate for training
+#    generate = False, # whether to generate text during training
+#    tdl = None, # required if generate=True, a TextDataLoader
+#    prompt = None, # Prompt, required if generate=True
+#    window = None, # Window size, required if generate=True
+#    chars = 200, # Chars to generate during training
+#    temperature = 1.0, # Temperature (softmax activation)
+#    save_best = True) # Save the best model during training
+#
+#    def loss(self,
+#    theOutput, # model output
+#    actual) # Actual, true output
+#
+#    def step(self,
+#    theInput, # Processed input for one step forward
+#    temperature = 1.0)
+#
+#    def save(self,
+#    filename = 'model.pth')
+#
+#    def load(self,
+#    filename = 'model.pth')
+#
+#    // encodes text, generates an output, and decodes the output
+#    def generate(self, 
+#    prompt, 
+#    tdl, # Text data loader
+#    window, 
+#    chars=200, 
+#    temperature = 1.0)
+#
+#    def __join(self,
+#    str1, # String 1 to join
+#    str2, # String 2 to join
+#    limit) # Limit is the window size generally to keep characters of str1 and str2 the same
+#    
+#    def params() // Returns model parameters
+#
+#    def print() // Prints model parameters
+#    
+#    // Finding learning rate using Fast.AI technique
+#    // See https://sgugger.github.io/how-do-you-find-a-good-learning-rate.html`
+#    def finder()
 class RNN:
     def __init__(self, vocab_size, hidden_size, batch_size, training_data, valid_data, train = True):
         self.vocab_size = vocab_size
@@ -24,7 +80,14 @@ class RNN:
         self.hidden = torch.zeros(self.batch_size, self.hidden_size, requires_grad=False)
 
     # Training the model
-    def train(self, epochs = 30, steps_log = 10000, learning_rate = 1e-5, generate=True, decoder={}):
+    def train(self, epochs = 30, steps_log = 10000, learning_rate = 1e-5, generate = False, 
+              tdl = None, prompt = None, window = None, chars = 200, temperature = 1.0, save_best = True):
+        if save_best:
+            minLoss = torch.inf
+        if generate:
+            assert type(tdl) == TextDataLoader
+            assert type(prompt) == str
+            assert type(window) == int
         print("Training for ", epochs, " epochs with a total of ", epochs*self.num_batches, " steps.")
         print("===============================================")
         for i in range(0, epochs):
@@ -54,6 +117,13 @@ class RNN:
                 mLoss = allLs.mean()
                 mLoss = mLoss.item()
                 print("Validation loss: ", mLoss)
+                if generate:
+                    print("Generating text: ")
+                    print(self.generate(prompt=prompt, tdl=tdl, window=window, chars=chars, temperature=temperature))
+            if save_best and mLoss < minLoss:
+                self.save()
+                print("This model saved")
+                minLoss = mLoss
     def loss(self, theOutput, actual):
         epsilon = 1e-9
         return -1*((actual*torch.log(theOutput+epsilon)).sum())
@@ -91,6 +161,43 @@ class RNN:
         return 0
 
     # Run inferences on the model
-    def generate(self, prompt, temperature = 1.0):
-        with torch.no_grad():
-            return self.step(prompt, temperature=temperature)
+    def generate(self, prompt, tdl, window, chars=1000, temperature = 1.0):
+        assert type(tdl) == TextDataLoader
+        fill = ""
+        for i in range(chars):
+            s = tdl.encode(self.__join(prompt, fill, limit=window))
+            with torch.no_grad():
+                ns = self.step(s, temperature=temperature)
+            res = tdl.decode(ns)
+            fill += res[len(res)-1]
+        return fill
+    
+    def __join(self, str1, str2, limit):
+        comp = str1+str2
+        while len(comp) > limit:
+            comp = comp[1:]
+        #print(comp)
+        return comp
+    
+    # Returns the parameters
+    def params(self):
+        d = {"wxh":self.wxh,
+             "whh":self.whh,
+             "bh":self.bh,
+             "why":self.why,
+             "by":self.by}
+        return d
+
+    # Prints the parameters
+    def print(self):
+        d = {"wxh":self.wxh,
+             "whh":self.whh,
+             "bh":self.bh,
+             "why":self.why,
+             "by":self.by}
+        print(d)
+        return 0
+
+    # Finds a good learning rate
+    def finder(self):
+        return
