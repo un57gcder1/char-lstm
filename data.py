@@ -77,6 +77,7 @@ class TextDataLoader:
 
         ind_val_var = self.valid_data[:len(self.valid_data)-window]
         dep_val_var = self.valid_data[window:]
+        print(ind_val_var.shape, dep_val_var.shape)
         m = np.array([ind_val_var, dep_val_var])
         self.valid_data = tensor(m)
 
