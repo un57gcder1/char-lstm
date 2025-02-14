@@ -104,7 +104,7 @@ class RNN:
                     p.data -= p.grad*learning_rate
                     p.grad = None
                 if ((j+1) % steps_log == 0):
-                    print("Epoch: ", i+1, "   Step: ", j+1, "/", self.num_batches, "   Loss: ", intLoss)
+                    print("Epoch: ", i+1, "   Step: ", j+1, "/", self.num_examples, "   Loss: ", intLoss)
                 self.hidden.detach_()
             print("Epoch ", i+1, " Completed")
             with torch.no_grad():
@@ -122,7 +122,7 @@ class RNN:
                 print("Validation loss: ", mLoss)
                 if generate:
                     print("Generating text: ")
-                    print(self.generate(prompt=prompt, tdl=tdl, window=window, chars=chars, temperature=temperature))
+                    print(self.generate(prompt=prompt, tdl=tdl, chars=chars, temperature=temperature))
             if save_best and mLoss < minLoss:
                 self.save()
                 print("This model saved")
@@ -164,11 +164,11 @@ class RNN:
         return 0
 
     # Run inferences on the model
-    def generate(self, prompt, tdl, window, chars=200, temperature = 1.0):
+    def generate(self, prompt, tdl, chars=200, temperature = 1.0):
         assert type(tdl) == TextDataLoader
         fill = ""
         for i in range(chars):
-            s = tdl.encode(self.__join(prompt, fill, limit=window))
+            s = tdl.encode(self.__join(prompt, fill, limit=self.window))
             with torch.no_grad():
                 ns = self.step(s, temperature=temperature)
             res = tdl.decode(ns)
