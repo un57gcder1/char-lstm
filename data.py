@@ -13,7 +13,7 @@ import os
 
 """
 class TextDataLoader:
-    def __init__(self, textFile):
+    def __init__(self, textFile, window):
         if type(textFile) == list and len(textFile) == 2:
             self.train = textFile[0]
             self.valid = textFile[1]
@@ -33,6 +33,11 @@ class TextDataLoader:
         self.tokens = {"unk": 0}
         self.training_data = []
         self.valid_data = []
+        self.window = window 
+        if self.window < 1:
+            raise Exception("Window size must be greater than or equal to 1.")
+        if self.window > 1000:
+            raise Warning("Window size is unusually large. May cause errors.")
 
     # Reads file and tokenizes it, along with assigning a numerical value
     def tokenize(self):
@@ -65,56 +70,32 @@ class TextDataLoader:
         self.valid_data = tensor(self.valid_data, dtype=torch.float32)
         return (self.training_data, self.valid_data)
 
-    def substantiate(self, window = 1):
-        if window < 1:
-            raise Exception("Window size must be greater than or equal to 1.")
-        if window > 1000:
-            raise Warning("Window size is unusually large. May cause errors.")
-        ind_var = self.training_data[:len(self.training_data)-window]
-        dep_var = self.training_data[window:]
-        n = np.array([ind_var, dep_var])
-        self.training_data = tensor(n)
+    def substantiate(self):
+        ind_var = self.training_data[:len(self.training_data)-1]
+        ind_var = self.__expand(ind_var, ind_var.size()[0])
+        dep_var = self.training_data[self.window:]
+        dep_var = dep_var.view(dep_var.size()[0], 1, dep_var.size()[1])
+        self.training_data = (ind_var, dep_var)
 
-        ind_val_var = self.valid_data[:len(self.valid_data)-window]
-        dep_val_var = self.valid_data[window:]
-        print(ind_val_var.shape, dep_val_var.shape)
-        m = np.array([ind_val_var, dep_val_var])
-        self.valid_data = tensor(m)
+        ind_val_var = self.valid_data[:len(self.valid_data)-1]
+        ind_val_var = self.__expand(ind_val_var, ind_val_var.size()[0])
+        dep_val_var = self.valid_data[self.window:]
+        dep_val_var = dep_val_var.view(dep_val_var.size()[0], 1, dep_val_var.size()[1])
+        self.valid_data = (ind_val_var, dep_val_var)
 
         return (self.training_data, self.valid_data)
 
-    # Batch size (default is 1 token)
-    # Note: Removes last, incomplete batch (no padding)
-    def batch(self, batch_size = 1):
-        if self.training_data.dim() == 3 and self.valid_data.dim() == 3:
-            # Rounds down to remove last batch: ex. [2, 108, 37] --> [2, 104, 37]
-            self.training_data = self.training_data[:,:(self.training_data.size()[1]//batch_size)*batch_size,:]
-
-            # Format: 2 variables, num_batches, batch_size, vocab_size
-            self.training_data = self.training_data.view(self.training_data.size()[0],
-                               self.training_data.size()[1]//batch_size, batch_size,
-                               self.training_data.size()[2])
-
-            # Rounds down to remove last batch: ex. [2, 108, 37] --> [2, 104, 37]
-            self.valid_data = self.valid_data[:,:(self.valid_data.size()[1]//batch_size)*batch_size, :]
-
-            self.valid_data = self.valid_data.view(self.valid_data.size()[0],
-                               self.valid_data.size()[1]//batch_size, batch_size,
-                                                   self.valid_data.size()[2])
-        return (self.training_data, self.valid_data)
-        """
-        elif self.training_data.dim() == 1 and self.valid_Data.dim() == 1: 
-            self.training_data = self.training_data[:(self.training_data.size()[0]//batch_size)*batch_size]
-            self.training_data = self.training_data.view(self.training_data.size()[1]//batch_size, 
-                               batch_size)
-
-            self.valid_data = self.valid_data[:(self.valid_data.size()[0]//batch_size)*batch_size]
-            self.valid_data = self.valid_data.view(self.valid_data.size()[1]//batch_size, 
-                               batch_size)
-        """
-    """else:
-            raise Exception("Training Data & Valid Data tensors are of wrong shape.")"""
-        #return (self.training_data, self.valid_data)
+    # Expanding the independent variable to window size
+    # theTensor = shape [examples, vocab_size]
+    def __expand(self, theTensor, examples):
+        nL = []
+        for i in range(examples):
+            unique = theTensor[0+i:self.window+i,:]
+            if (unique.size()[0] != self.window):
+                break
+            nL.append(unique)
+        nL = torch.stack(nL)
+        return nL
 
     def size(self):
         return len(self.tokens)
