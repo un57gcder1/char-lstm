@@ -1,3 +1,5 @@
+# NOTE: Will implement window. Batch_size = 1
+# IMPORTANT: For the time being, batch_size won't be implemented!!!!!!!!!!
 import torch
 import torch.nn.functional as F
 from data import TextDataLoader
@@ -58,18 +60,18 @@ from data import TextDataLoader
 #    // See https://sgugger.github.io/how-do-you-find-a-good-learning-rate.html`
 #    def finder()
 class RNN:
-    def __init__(self, vocab_size, hidden_size, batch_size, training_data, valid_data, train = True):
+    def __init__(self, vocab_size, hidden_size, window, training_data, valid_data, train = True):
         self.vocab_size = vocab_size
         self.hidden_size = hidden_size
-        self.batch_size = batch_size
+        self.window = window
         if train:
             # Data
-            self.x_info = training_data[0,:,:,:]
-            self.y_info = training_data[1,:,:,:]
-            self.num_batches = training_data.size()[1]
-            self.eval_batches = valid_data.size()[1]
-            self.eval_x = valid_data[0,:,:]
-            self.eval_y = valid_data[1,:,:]
+            self.x_info = training_data[0]
+            self.y_info = training_data[1]
+            self.num_examples = training_data[0].size()[0]
+            self.eval_examples = valid_data[0].size()[0]
+            self.eval_x = valid_data[0]
+            self.eval_y = valid_data[1]
 
             # Params
             self.wxh = torch.randn(self.vocab_size, self.hidden_size).requires_grad_()
@@ -77,24 +79,24 @@ class RNN:
             self.bh = torch.randn(1, self.hidden_size).requires_grad_()
             self.why = torch.randn(self.hidden_size, self.vocab_size).requires_grad_()
             self.by = torch.randn(1, self.vocab_size).requires_grad_()
-        self.hidden = torch.zeros(self.batch_size, self.hidden_size, requires_grad=False)
+        self.hidden = torch.zeros(self.window, self.hidden_size, requires_grad=False)
 
     # Training the model
     def train(self, epochs = 30, steps_log = 10000, learning_rate = 1e-5, generate = False, 
-              tdl = None, prompt = None, window = None, chars = 200, temperature = 1.0, save_best = True):
+              tdl = None, prompt = None, chars = 200, temperature = 1.0, save_best = True):
         if save_best:
             minLoss = torch.inf
         if generate:
             assert type(tdl) == TextDataLoader
             assert type(prompt) == str
-            assert type(window) == int
-        print("Training for ", epochs, " epochs with a total of ", epochs*self.num_batches, " steps.")
+        print("Training for ", epochs, " epochs with a total of ", epochs*self.num_examples, " steps.")
         print("===============================================")
         for i in range(0, epochs):
-            for j in range(0, self.num_batches):
+            for j in range(0, self.num_examples):
                 x = self.x_info[j,:,:]
                 y = self.y_info[j,:,:]
                 y_pred = self.step(x)
+                y_pred = y_pred[-1,:] # Taking last output
                 loss = self.loss(y_pred, y)
                 intLoss = loss.item()
                 loss.backward()
@@ -107,10 +109,11 @@ class RNN:
             print("Epoch ", i+1, " Completed")
             with torch.no_grad():
                 allLs = []
-                for j in range(0, self.eval_batches):
-                    x = self.eval_x[j, :]
-                    y = self.eval_y[j, :]
+                for j in range(0, self.eval_examples):
+                    x = self.eval_x[j,:,:]
+                    y = self.eval_y[j,:,:]
                     y_pred = self.step(x)
+                    y_pred = y_pred[-1,:] # Taking last output: [50,64] --> [64]
                     l = self.loss(y_pred, y)
                     allLs.append(l)
                 allLs = torch.tensor(allLs)
@@ -161,7 +164,7 @@ class RNN:
         return 0
 
     # Run inferences on the model
-    def generate(self, prompt, tdl, window, chars=1000, temperature = 1.0):
+    def generate(self, prompt, tdl, window, chars=200, temperature = 1.0):
         assert type(tdl) == TextDataLoader
         fill = ""
         for i in range(chars):
