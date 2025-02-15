@@ -89,15 +89,23 @@ class TextDataLoader:
 
     # Expanding the independent variable to window size
     # theTensor = shape [examples, vocab_size]
-    def __expand(self, theTensor, examples):
+    # Outputs [examples, window_size, vocab_size]
+    # Mem = aimed at reducing memory usage (SOMETHING BETTER IS NEEDED!)
+    def __expand(self, theTensor, examples, mem = 10000):
         nL = []
+        laTensors = []
         for i in range(examples):
             unique = theTensor[0+i:self.window+i,:]
             if (unique.size()[0] != self.window):
                 break
             nL.append(unique)
-        nL = torch.stack(nL)
-        return nL
+            if i % mem == 0:
+                print(i)
+                laTensors.append(torch.stack(nL))
+                nL = []
+        laTensors.append(torch.stack(nL))
+        out = torch.cat(laTensors, dim=0)
+        return out
 
     def size(self):
         return len(self.tokens)
