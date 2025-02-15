@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch import tensor
 import os
-
+import random
 
 """
 * Takes a text file and converts it into trainable, tensor data
@@ -31,6 +31,7 @@ class TextDataLoader:
             raise Exception("Validation file does not have a valid path.")
 
         self.tokens = {"unk": 0}
+        self.decoder = None
         self.training_data = []
         self.valid_data = []
         self.window = window 
@@ -46,6 +47,7 @@ class TextDataLoader:
                 for w in line:
                     if w not in self.tokens:
                         self.tokens[w] = len(self.tokens)
+        self.decoder = {v: k for k,v in self.tokens.items()}
         return self.tokens
 
     def numericalize(self):
@@ -113,13 +115,11 @@ class TextDataLoader:
         output = tensor(output, dtype=torch.float32)
         return output
 
-    def decode(self, output): 
-        decoder = {v: k for k,v in self.tokens.items()}
+    def decode(self, output, sampling = "multinomial"): 
         theInput = ""
         for i in output:
-            value, index = torch.max(i, dim=0)
-            num = index.item()
-            theInput += decoder[num]
+            num = self.__sample(i, sampling)
+            theInput += self.decoder[num]
         return theInput
     
     def save(self, filename="db.pth"):
@@ -135,3 +135,13 @@ class TextDataLoader:
         self.valid_data = d["valid_data"]
         self.tokens = d["tokens"]
         return (self.training_data, self.valid_data)
+
+    def __sample(self, theTensor, sampling):
+        if sampling == "multinomial":
+            num = random.choices(list(self.decoder.keys()), weights=i, k=1)[0]
+        elif sampling == "greedy":
+            val, ind = torch.max(i, dim=0)
+            num = ind.item()
+        else:
+            raise Exception("Sampling method must be str: multinomial, greedy.")
+        return num
