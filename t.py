@@ -3,11 +3,10 @@ from model import RNN
 
 EPOCHS = 50
 LR = 1e-4
-TEMP = 0.5
+TEMP = 0.2
 WINDOW = 50
 HS = 256
-PROMPT = "Why are you so stupid? I am confused by this matter as much as y"
-# "To begin: I was quite confused and alarmed by the startling news"
+PROMPT = "To begin: I was quite confused and alarmed by the startling news"
 CHARS = 200
 
 t = TextDataLoader(["testing/smallt.txt","testing/smallv.txt"], WINDOW)
@@ -28,5 +27,6 @@ o = t.load()
 
 model = RNN(t.size(), HS, WINDOW, o[0], o[1])
 model.load()
-s = model.train(learning_rate=LR, generate=True, epochs=EPOCHS, tdl=t, prompt=PROMPT, temperature=TEMP)
-model.save("100-epochs.pth")
+#s = model.train(learning_rate=LR, generate=True, epochs=EPOCHS, tdl=t, prompt=PROMPT, temperature=TEMP)
+#model.save("150-epochs.pth")
+print(PROMPT, model.generate(prompt=PROMPT,tdl=t,temperature=TEMP))

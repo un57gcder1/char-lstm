@@ -164,14 +164,14 @@ class RNN:
         return 0
 
     # Run inferences on the model
-    def generate(self, prompt, tdl, chars=200, temperature = 1.0):
+    def generate(self, prompt, tdl, chars=200, temperature = 1.0, sampling = "multinomial"):
         assert type(tdl) == TextDataLoader
         fill = ""
         for i in range(chars):
             s = tdl.encode(self.__join(prompt, fill, limit=self.window))
             with torch.no_grad():
                 ns = self.step(s, temperature=temperature)
-            res = tdl.decode(ns)
+            res = tdl.decode(ns, sampling=sampling)
             fill += res[len(res)-1]
         return fill
     
@@ -179,7 +179,6 @@ class RNN:
         comp = str1+str2
         while len(comp) > limit:
             comp = comp[1:]
-        #print(comp)
         return comp
     
     # Returns the parameters
