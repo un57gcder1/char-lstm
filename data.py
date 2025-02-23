@@ -11,6 +11,8 @@ import random
 *** A datatype that provides the name (list or dict) with format
 **** [train_file, valid_file], {"train": train_file, "valid": valid_file}
 
+NOTE: Data will not be one-hot encoded due to memory constraints; change in progress.
+
 """
 class TextDataLoader:
     def __init__(self, textFile, window):
