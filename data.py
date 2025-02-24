@@ -75,20 +75,20 @@ class TextDataLoader:
         x_data = self.training_data[0]
         y_data = self.training_data[1]
 
-        x_data = x_data[:x_data.size()[0]-(x_data.size()[0] % timesteps)]
-        y_data = y_data[:y_data.size()[0]-(y_data.size()[0] % timesteps)]
+        x_data = x_data[:x_data.size()[0]-(x_data.size()[0] % factor)]
+        y_data = y_data[:y_data.size()[0]-(y_data.size()[0] % factor)]
 
-        x_data = x_data.view(batch_size, timesteps)
-        y_data = y_data.view(batch_size, timesteps)
+        x_data = x_data.view(x_data.size()[0]//factor, batch_size, timesteps)
+        y_data = y_data.view(y_data.size()[0]//factor, batch_size, timesteps)
 
         xval_data = self.valid_data[0]
         yval_data = self.valid_data[1]
 
-        xval_data = xval_data[:xval_data.size()[0]-(xval_data.size()[0] % timesteps)]
-        yval_data = yval_data[:yval_data.size()[0]-(yval_data.size()[0] % timesteps)]
+        xval_data = xval_data[:xval_data.size()[0]-(xval_data.size()[0] % factor)]
+        yval_data = yval_data[:yval_data.size()[0]-(yval_data.size()[0] % factor)]
 
-        xval_data = xval_data.view(batch_size, timesteps)
-        yval_data = yval_data.view(batch_size, timesteps)
+        xval_data = xval_data.view(xval_data.size()[0]//factor, batch_size, timesteps)
+        yval_data = yval_data.view(yval_data.size()[0]//factor, batch_size, timesteps)
 
         self.training_data = (x_data, y_data)
         self.valid_data = (xval_data, yval_data)
