@@ -13,9 +13,9 @@ CHARS = 200
 
 t = TextDataLoader(["testing/jt.txt","testing/jv.txt"])
 
-t.preprocess(BS, SL)
+#t.preprocess(BS, SL)
 
-#o = t.load()
+t.load()
 
 print(t.training_data[0].shape, t.training_data[1].shape, t.valid_data[0].shape, t.valid_data[1].shape)
 model = RNN(BS, ES, len(t.tokens), HS, SL, t.training_data, t.valid_data)

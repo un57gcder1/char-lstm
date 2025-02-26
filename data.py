@@ -57,8 +57,8 @@ class TextDataLoader:
                         self.valid_data.append(self.tokens[w])
                     except:
                         self.valid_data.append(self.tokens["unk"])
-        self.training_data = tensor(self.training_data, dtype=torch.float32)
-        self.valid_data = tensor(self.valid_data, dtype=torch.float32)
+        self.training_data = tensor(self.training_data, dtype=torch.long)
+        self.valid_data = tensor(self.valid_data, dtype=torch.long)
 
     # Dividing into two x, y tuples for training and valid data
     def divide(self):
