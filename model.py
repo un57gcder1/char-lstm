@@ -5,7 +5,8 @@ from data import TextDataLoader
 # Data: Variable Tuple of Batch size x Sequence Length
 # Data[0] = Batch size x Sequence Length (X), same with (Y)
 class RNN:
-    def __init__(self, embed_size, vocab_size, hidden_size, timesteps, training_data, valid_data, train = True):
+    def __init__(self, batch_size, embed_size, vocab_size, hidden_size, timesteps, training_data, valid_data, train = True):
+        self.batch_size = batch_size
         self.vocab_size = vocab_size
         self.hidden_size = hidden_size
         self.timesteps = timesteps
@@ -20,17 +21,18 @@ class RNN:
             self.eval_y = valid_data[1]
 
             # Params
-            self.wxh = torch.randn(self.vocab_size, self.hidden_size).requires_grad_()
+            self.wxh = torch.randn(self.embed_size, self.hidden_size).requires_grad_()
             self.whh = torch.randn(self.hidden_size, self.hidden_size).requires_grad_()
             self.bh = torch.randn(1, self.hidden_size).requires_grad_()
             self.why = torch.randn(self.hidden_size, self.vocab_size).requires_grad_()
             self.by = torch.randn(1, self.vocab_size).requires_grad_()
-            self.embedding = torch.randn(self.vocab_size, self.embedding_size).requires_grad_()
-        self.hidden = torch.zeros(self.timesteps, self.hidden_size, requires_grad=False)
+            self.embedding = torch.randn(self.vocab_size, self.embed_size).requires_grad_()
+        self.hidden = torch.zeros(self.batch_size, self.hidden_size, requires_grad=False)
 
     # Training the model
-    def train(self, epochs = 30, steps_log = 10000, learning_rate = 1e-3):
+    def train(self, epochs = 40, steps_log = 1000, learning_rate = 1e-3, save_best = True):
         for i in range(epochs):
+            print("================ EPOCH 1 =========================")
             for j in range(self.num_examples):
                 x = self.x_info[j,:,:]
                 y = self.y_info[j,:,:]
@@ -45,15 +47,35 @@ class RNN:
                     print("Epoch: ", i+1, "   Step: ", j+1, "/", self.num_examples, "   Loss: ", intLoss)
                 self.hidden.detach_()
             print("Epoch ", i+1, " completed.")
+            with torch.no_grad():
+                allLs = []
+                for j in range(self.eval_examples):
+                    x = self.eval_x[j,:,:]
+                    y = self.eval_y[j,:,:]
+                    y_pred = self.forward(x)
+                    l = self.loss(y_pred, y)
+                    allLs.append(l)
+                allLs = torch.tensor(allLs)
+                mLoss = allLs.mean()
+                mLoss = mLoss.item()
+                print("Validation loss: ", mLoss)
+            if save_best and mLoss < minLoss:
+                self.save()
+                print("This model saved")
+                minLoss = mLoss
 
     # Actual is an input of size BS x SL
     # theOutput is expected: shape BS x SL x VS
     def loss(self, theOutput, actual):
-        actual = actual.unsqueeze(2) # Actual --> BS x SL x 1
-        theOutput = torch.gather(theOutput, dim=2, index=actual) # Getting highest prob vocab
+        theOutput, actual = self.__expand(theOutput, actual)
         epsilon = 1e-9
         return -1*((actual*torch.log(theOutput+epsilon)).sum())
     
+    def __expand(self, theOutput, actual):
+        actual = actual.unsqueeze(2) # Actual --> BS x SL x 1
+        theOutput = torch.gather(theOutput, dim=2, index=actual) # Getting highest prob vocab
+        return theOutput, actual
+
     # theInput: a matrix of shape batch_size x vocab_size (row, columns)
     # One RNN timestep
     def step(self, theInput, temperature = 1.0):
@@ -67,7 +89,7 @@ class RNN:
     def forward(self, theInput, temperature = 1.0):
         outputs = []
         for i in range(self.timesteps):
-            x = self.embedding(theInput[:, i])
+            x = self.embedding[theInput[:, i]]
             y = self.step(x)
             outputs.append(y)
         return torch.stack(outputs, dim=1)
@@ -93,3 +115,8 @@ class RNN:
         self.why = d["why"]
         self.by = d["by"]
         return 0
+
+    # Right now, the input should be BS x SL
+    def generate(self, theInput):
+        with torch.no_grad():
+            return
