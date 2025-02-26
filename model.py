@@ -31,6 +31,7 @@ class RNN:
 
     # Training the model
     def train(self, epochs = 40, steps_log = 1000, learning_rate = 1e-3, save_best = True):
+        minLoss = torch.inf
         for i in range(epochs):
             print("================ EPOCH 1 =========================")
             for j in range(self.num_examples):
@@ -39,6 +40,7 @@ class RNN:
                 y_pred = self.forward(x)
                 loss = self.loss(y_pred, y)
                 intLoss = loss.item()
+                #print(intLoss)
                 loss.backward()
                 for p in [self.wxh, self.whh, self.bh, self.why, self.by, self.embedding]:
                     p.data -= p.grad*learning_rate
@@ -67,17 +69,17 @@ class RNN:
     # Actual is an input of size BS x SL
     # theOutput is expected: shape BS x SL x VS
     def loss(self, theOutput, actual):
-        theOutput, actual = self.__expand(theOutput, actual)
-        epsilon = 1e-9
-        return -1*((actual*torch.log(theOutput+epsilon)).sum())
+        theOutput = self.__expand(theOutput, actual)
+        epsilon = 1e-7
+        return -1*((torch.log(theOutput+epsilon)).mean())
     
     def __expand(self, theOutput, actual):
         actual = actual.unsqueeze(2) # Actual --> BS x SL x 1
         theOutput = torch.gather(theOutput, dim=2, index=actual) # Getting highest prob vocab
-        return theOutput, actual
+        return theOutput
 
-    # theInput: a matrix of shape batch_size x vocab_size (row, columns)
-    # One RNN timestep
+    # theInput: a matrix of size batch_size x embed_size (row, columns)
+    # One RNN timestep: output batch_size x vocab_size
     def step(self, theInput, temperature = 1.0):
         self.hidden = torch.tanh(self.hidden@self.whh + theInput@self.wxh + self.bh)
         theOutput = self.hidden@self.why + self.by
