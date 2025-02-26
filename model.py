@@ -2,14 +2,14 @@ import torch
 import torch.nn.functional as F
 from data import TextDataLoader
 
-# Data: Variable x Batch size x Sequence Length
+# Data: Variable Tuple of Batch size x Sequence Length
 # Data[0] = Batch size x Sequence Length (X), same with (Y)
 class RNN:
-    def __init__(self, embed_size, vocab_size, hidden_size, window, training_data, valid_data, train = True):
+    def __init__(self, embed_size, vocab_size, hidden_size, timesteps, training_data, valid_data, train = True):
         self.vocab_size = vocab_size
         self.hidden_size = hidden_size
-        self.window = window
-        self.embed_size = embedding_size
+        self.timesteps = timesteps
+        self.embed_size = embed_size
         if train:
             # Data
             self.x_info = training_data[0]
@@ -26,13 +26,31 @@ class RNN:
             self.why = torch.randn(self.hidden_size, self.vocab_size).requires_grad_()
             self.by = torch.randn(1, self.vocab_size).requires_grad_()
             self.embedding = torch.randn(self.vocab_size, self.embedding_size).requires_grad_()
-        self.hidden = torch.zeros(self.window, self.hidden_size, requires_grad=False)
+        self.hidden = torch.zeros(self.timesteps, self.hidden_size, requires_grad=False)
 
     # Training the model
-    def train(self, epochs = 30, steps_log = 10000, learning_rate = 1e-5, generate = False, 
-              tdl = None, prompt = None, chars = 200, temperature = 1.0, save_best = True):
-        return
+    def train(self, epochs = 30, steps_log = 10000, learning_rate = 1e-3):
+        for i in range(epochs):
+            for j in range(self.num_examples):
+                x = self.x_info[j,:,:]
+                y = self.y_info[j,:,:]
+                y_pred = self.forward(x)
+                loss = self.loss(y_pred, y)
+                intLoss = loss.item()
+                loss.backward()
+                for p in [self.wxh, self.whh, self.bh, self.why, self.by, self.embedding]:
+                    p.data -= p.grad*learning_rate
+                    p.grad = None
+                if ((j+1) % steps_log == 0):
+                    print("Epoch: ", i+1, "   Step: ", j+1, "/", self.num_examples, "   Loss: ", intLoss)
+                self.hidden.detach_()
+            print("Epoch ", i+1, " completed.")
+
+    # Actual is an input of size BS x SL
+    # theOutput is expected: shape BS x SL x VS
     def loss(self, theOutput, actual):
+        actual = actual.unsqueeze(2) # Actual --> BS x SL x 1
+        theOutput = torch.gather(theOutput, dim=2, index=actual) # Getting highest prob vocab
         epsilon = 1e-9
         return -1*((actual*torch.log(theOutput+epsilon)).sum())
     
@@ -43,6 +61,16 @@ class RNN:
         theOutput = self.hidden@self.why + self.by
         theOutput = F.softmax(theOutput/temperature, dim=-1)
         return theOutput
+
+    # theInput: a tensor of shape batch_size x sequence_length
+    # Output: batch_size x timesteps x vocab_size
+    def forward(self, theInput, temperature = 1.0):
+        outputs = []
+        for i in range(self.timesteps):
+            x = self.embedding(theInput[:, i])
+            y = self.step(x)
+            outputs.append(y)
+        return torch.stack(outputs, dim=1)
 
     # Saving the model weights, etc.
     def save(self, filename = "model.pth"):
