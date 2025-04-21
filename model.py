@@ -30,7 +30,7 @@ class RNN:
         self.hidden = torch.zeros(self.batch_size, self.hidden_size, requires_grad=False)
 
     # Training the model
-    def train(self, epochs = 40, steps_log = 1000, learning_rate = 1e-3, save_best = True):
+    def train(self, epochs = 40, steps_log = 1000, learning_rate = 1e-3, save_best = True, clip_value = 0.5):
         minLoss = torch.inf
         for i in range(epochs):
             print("================ EPOCH 1 =========================")
@@ -43,6 +43,7 @@ class RNN:
                 #print(intLoss)
                 loss.backward()
                 for p in [self.wxh, self.whh, self.bh, self.why, self.by, self.embedding]:
+                    p.grad.data.clamp_(min=-clip_value, max=clip_value) # Gradient clipping to prevent exploding/vanishing gradients
                     p.data -= p.grad*learning_rate
                     p.grad = None
                 if ((j+1) % steps_log == 0):
