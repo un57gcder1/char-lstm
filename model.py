@@ -122,4 +122,6 @@ class RNN:
     # Right now, the input should be BS x SL
     def generate(self, theInput):
         with torch.no_grad():
+            pred = self.forward(theInput)
+
             return
