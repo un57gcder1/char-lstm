@@ -117,3 +117,13 @@ class TextDataLoader:
             filename = kwargs.get("filename", "db.pth")
             self.save(filename, t)
         return 0
+
+    def encode(self, text, batch_size, timesteps):
+        tokenized = []
+        for t in text:
+            if t in self.tokens:
+                tokens.append(self.tokens[t])
+            else:
+                tokens.append(self.tokens["unk"])
+
+        return 0
